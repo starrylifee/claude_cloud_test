@@ -582,7 +582,8 @@
         const s = Math.max(R * 2 / img.naturalWidth, R * 2 / img.naturalHeight);
         ctx.drawImage(img, x - img.naturalWidth * s / 2, y - img.naturalHeight * s / 2, img.naturalWidth * s, img.naturalHeight * s);
         ctx.restore();
-        ctx.strokeStyle = hexA(this.col.photo, isSel ? 1 : 0.8); ctx.lineWidth = isSel ? 2 : 1.4;
+        const ring = S.mode === 'both' ? '#F3EEFF' : this.col.photo;
+        ctx.strokeStyle = hexA(ring, isSel ? 1 : 0.8); ctx.lineWidth = isSel ? 2 : 1.4;
         ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.stroke();
         this.hits.push({ x, y, r: R, item: o, prio: 4 });
       }
@@ -751,8 +752,8 @@
         const box = [x0 - pad, y0 - pad, x0 + tw + pad, y0 + L.size * 1.1 + pad];
         if (box[0] < 12 || box[2] > w - 12 || box[1] < 8 || box[3] > h - 8) continue;
         const hit = (b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1];
-        if (placed.some(hit)) continue;
-        if (!(L.align === 'center' && !L.pill) && solid.some(hit)) continue;
+        if (!L.pill && placed.some(hit)) continue;
+        if (!L.pill && L.align !== 'center' && solid.some(hit)) continue;
         ctx.globalAlpha = L.prio < 90 && underground(L.x, L.y) ? 0.42 : 1;
         placed.push(box);
         ctx.textAlign = L.align;
@@ -822,16 +823,10 @@
       halo.addColorStop(0, hexA(col, 0)); halo.addColorStop(0.45, hexA(col, 0.22)); halo.addColorStop(1, hexA(col, 0));
       ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(0, 0, R + 14, 0, TAU); ctx.fill();
       ctx.strokeStyle = hexA(col, 0.95); ctx.lineWidth = 2.2;
-      ctx.rotate(reduceMotion ? 0 : t * 0.6);
-      for (let k = 0; k < 4; k++) {
-        ctx.beginPath(); ctx.arc(0, 0, R, k * Math.PI / 2 + 0.25, k * Math.PI / 2 + Math.PI / 2 - 0.25); ctx.stroke();
-      }
-      ctx.rotate(reduceMotion ? 0 : -t * 1.2);
-      ctx.strokeStyle = hexA(col, 0.7); ctx.lineWidth = 1.6;
-      for (let k = 0; k < 4; k++) {
-        const an = k * Math.PI / 2;
-        ctx.beginPath(); ctx.moveTo(Math.cos(an) * (R + 4), Math.sin(an) * (R + 4)); ctx.lineTo(Math.cos(an) * (R + 10), Math.sin(an) * (R + 10)); ctx.stroke();
-      }
+      ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.stroke();
+      // a small orbiting spark marks it as "selected" without dashes that could read as a glyph
+      ctx.fillStyle = '#FFF6E2';
+      ctx.beginPath(); ctx.arc(Math.cos(t * 1.4) * R, Math.sin(t * 1.4) * R, 2.2, 0, TAU); ctx.fill();
       ctx.restore();
     }
 

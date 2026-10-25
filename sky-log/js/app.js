@@ -547,8 +547,8 @@
     $('#recordDelete').hidden = !existing;
     // in 둘 다 mode the dialog asks whose record this is
     const wb = $('#whoPick');
-    wb.hidden = state.who !== 'both' || !!existing;
-    pickedWriter = existing ? existing.observer : 'a';
+    wb.hidden = false;
+    pickedWriter = existing ? existing.observer : state.who === 'both' ? 'a' : state.who;
     wb.innerHTML = `<span>누구의 기록?</span>${['a', 'b'].map((id) => `<button type="button" class="who-btn" data-pick="${id}" aria-pressed="${pickedWriter === id}" style="--c:${observer(id).color}"><span class="dot" style="background:${observer(id).color}"></span>${esc(observer(id).name)}</button>`).join('')}`;
     for (const b of $$('[data-pick]', wb)) b.onclick = () => { pickedWriter = b.dataset.pick; for (const x of $$('[data-pick]', wb)) x.setAttribute('aria-pressed', String(x === b)); };
     $('#gearList').innerHTML = [...new Set(state.obs.map((o) => o.gear).filter(Boolean))].map((g) => `<option value="${esc(g)}">`).join('');
@@ -558,7 +558,7 @@
     document.activeElement && document.activeElement.blur();
   }
   let pickedWriter = 'a';
-  const writer = () => (state.who === 'both' ? pickedWriter : state.who);
+  const writer = () => pickedWriter;
 
   function syncPhotoBox() { $('#photoDrop').hidden = !recForm.elements.photo.checked; }
   function renderPhotoThumbs() {

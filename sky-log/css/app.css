@@ -204,7 +204,7 @@ button { cursor: pointer; }
 .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--seen); }
 .tab-body { flex: 1; overflow: auto; padding: 18px 18px 28px; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
 
-.eyebrow { margin: 0; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-family: var(--font-mono); }
+.eyebrow { margin: 0; font-size: 12px; letter-spacing: .02em; color: var(--muted); }
 .h-title { font-family: var(--font-display); font-weight: 700; font-size: 26px; line-height: 1.2; margin: 4px 0 2px; text-wrap: balance; }
 .h-sub { margin: 0; color: var(--ink-2); }
 .section-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 24px 0 10px; }
@@ -558,7 +558,7 @@ button.stamp.s-known:hover { color: var(--known); border-color: var(--known); }
 .badge-s { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
 .badge-s svg { width: 16px; height: 16px; }
 .badge-s b { font-weight: 600; }
-.badge-s small { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.badge-s small { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .badge-s.s-seen { color: var(--seen); } .badge-s.s-photo { color: var(--photo); } .badge-s.s-known { color: var(--known); }
 .gadd { display: grid; place-items: center; border-style: dashed; border-color: rgba(95,216,198,.4); color: var(--photo); text-align: center; }
 .gadd span { display: grid; gap: 4px; justify-items: center; padding: 10px; }
