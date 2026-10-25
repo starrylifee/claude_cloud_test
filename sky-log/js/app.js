@@ -405,7 +405,8 @@
       <p class="eyebrow">${state.who === 'both' ? '우리 둘의 수집' : esc(observer(state.who).name) + '의 수집'}</p>
       <h2 class="h-title">모은 하늘</h2>
       ${state.who === 'both' ? `<p class="who-key"><span><i style="background:${observer('a').color}"></i>${esc(observer('a').name)}</span><span><i style="background:${observer('b').color}"></i>${esc(observer('b').name)}</span><span><i style="background:conic-gradient(${observer('a').color} 0 50%, ${observer('b').color} 0)"></i>둘 다</span></p>` : ''}
-      <div class="summary" style="margin-top:14px">
+      <p class="help" style="margin:10px 0 6px">메시에·NGC·별자리·별·행성을 모두 합친 천체 수예요.</p>
+      <div class="summary">
         <div class="sum-card s-seen"><b>${count('seen')}</b><span>봤어요</span></div>
         <div class="sum-card s-photo"><b>${count('photo')}</b><span>찍었어요</span></div>
         <div class="sum-card s-known"><b>${count('identified')}</b><span>알아봤어요</span></div>
@@ -693,15 +694,16 @@
       for (const stat of [$('#brandSub'), $('#sheetStat')]) { stat.classList.remove('bump'); void stat.offsetWidth; stat.classList.add('bump'); }
       // the name already rises on the chart; the toast speaks to progress and what to look for next
       const cNow = [...state.conMarks.values()].filter((v) => v.level === 2).length;
-      const title = it.kind === 'messier' ? `메시에 ${mNow}/110${mNow > before.messier ? ' (+1)' : ''}`
-        : it.kind === 'con' ? `별자리 ${cNow}/88${conNew ? ' (+1)' : ''}`
-        : it.moving ? `${it.name} ${obsFor(it.key).length}번째 날짜` : `${state.marks.size}개째 모음`;
-      const bits = [];
+      // lead with what changed; progress and the next idea follow
+      const short = it.kind === 'messier' || it.kind === 'dso' ? it.id : it.name;
       const had = prev ? STATUS.filter(([k]) => prev[k]).map(([, l]) => l) : [];
-      if (fresh.length && had.length) bits.push(`${had.join('·')} → ${fresh.join('·')} 추가`);
-      else if (fresh.length) bits.push(`처음 ${fresh.join(' · ')}`); else bits.push('또 만났어요');
-      if (nPhotos && !(prev && prev.photo)) bits.push('첫 사진');
-      else if (nPhotos) bits.push(`사진 ${nPhotos}장`);
+      const change = nPhotos && !(prev && prev.photo) ? '첫 사진' : fresh.length && had.length ? `${fresh.join('·')} 추가` : fresh.length ? `처음 ${fresh.join(' · ')}` : '또 만났어요';
+      const title = `${short} · ${change}`;
+      const bits = [];
+      if (it.kind === 'messier') bits.push(`메시에 ${mNow}/110${mNow > before.messier ? ' (+1)' : ''}`);
+      if (it.kind === 'con') bits.push(`별자리 ${cNow}/88${conNew ? ' (+1)' : ''}`);
+      if (it.moving) bits.push(`${obsFor(it.key).length}번째 날짜`);
+      if (nPhotos > 1) bits.push(`사진 ${nPhotos}장`);
       if (conNew && cid && it.kind !== 'con') bits.push(`${C.cons[cid].ko}에 첫 발자국`);
       const j = jd();
       const next = messier.filter((x) => !state.marks.has(x.key)).map((x) => [x, A.toHorizontal(x.ra, x.dec, j, state.site.lat, state.site.lon).alt])

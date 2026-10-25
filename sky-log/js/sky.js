@@ -249,7 +249,7 @@
 
       const mineOnly = L.mineOnly;
       if (L.ngc) {
-        const magLimit = fov > 100 ? 0 : fov > 60 ? 8.5 : fov > 30 ? 10.5 : fov > 12 ? 12.5 : 99;
+        const magLimit = fov > 80 ? -99 : fov > 50 ? 8.5 : fov > 30 ? 10.5 : fov > 12 ? 12.5 : 99;
         for (const o of S.dsos) {
           const mk = S.marks.get(o.key);
           if (!mk && (mineOnly || (o.mag ?? 13) > magLimit)) continue;
@@ -260,7 +260,9 @@
       if (L.messier) {
         for (const o of S.messier) {
           const mk = S.marks.get(o.key);
-          if (!mk && mineOnly) continue;
+          if (!mk && (mineOnly || fov > 110)) continue;
+          // zoomed out, unrecorded Messier objects show only if they are bright and above the horizon
+          if (!mk && fov > 80 && ((o.mag ?? 9) > 7 || (S.site && A.toHorizontal(o.ra, o.dec, S.jd, S.site.lat, S.site.lon).alt < 0))) continue;
           this.drawDSO(ctx, o, mk, ppd, fov < 75, 3);
         }
       }
@@ -379,7 +381,7 @@
         ctx.beginPath(); ctx.arc(q[0], q[1], R, 0, TAU); ctx.fill();
       }
       ctx.globalCompositeOperation = 'source-over';
-      if (L.bounds) {
+      if (L.bounds && fov <= 75) {
         ctx.strokeStyle = 'rgba(130,150,210,.13)'; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
         for (const id in C.bounds) for (const ring of C.bounds[id]) this.polyline(ctx, ring, true);
         ctx.setLineDash([]);
@@ -401,7 +403,7 @@
             for (const seg of C.lines[id]) this.polyline(ctx, seg, false);
             ctx.strokeStyle = hexA(lvl.color, on ? 0.95 : lvl.level === 2 ? 0.6 : 0.36); ctx.lineWidth = on ? 1.8 : 1.25;
           } else {
-            ctx.strokeStyle = 'rgba(140,165,230,.22)'; ctx.lineWidth = fov > 120 ? 0.7 : 1;
+            ctx.strokeStyle = fov > 80 ? 'rgba(140,165,230,.16)' : 'rgba(140,165,230,.22)'; ctx.lineWidth = fov > 120 ? 0.7 : 1;
           }
           for (const seg of C.lines[id]) this.polyline(ctx, seg, false);
         }
@@ -409,7 +411,7 @@
       if (L.conNames) {
         for (const id in C.cons) {
           const c = C.cons[id];
-          if (fov > 110 && c.rank > 2) continue;
+          if (!S.conMarks.get(id) && ((fov > 110 && c.rank > 1) || (fov > 70 && c.rank > 2))) continue;
           const q = P.project(c.c[0], c.c[1]);
           if (q[2] < 0.1 || q[0] < 0 || q[0] > this.w || q[1] < 0 || q[1] > this.h) continue;
           const lvl = S.conMarks.get(id);
@@ -551,7 +553,7 @@
         const q = this.P.project(o.ra, o.dec);
         if (q[2] < 0.1) continue;
         const isSel = sel && sel.key === o.key;
-        const R = isSel ? 28 : 11, M = 12;
+        const R = isSel ? 16 : 9, M = 12;
         const below = S.site && A.toHorizontal(o.ra, o.dec, S.jd, S.site.lat, S.site.lon).alt < 0;
         // pick the diagonal with the fewest objects and labels under the bubble
         let best = null;
@@ -569,21 +571,22 @@
         const { x, y, dx, dy } = best;
         this.photoBoxes.push({ x, y, r: R });
         ctx.save();
-        ctx.globalAlpha = isSel ? (below ? 0.55 : 1) : below ? 0.35 : 0.8;
-        ctx.strokeStyle = hexA(this.col.photo, 0.75); ctx.lineWidth = 1.2; ctx.setLineDash([2, 2]);
+        ctx.globalAlpha = isSel ? (below ? 0.45 : 1) : below ? 0.3 : 0.8;
+        if (below && 'filter' in ctx) ctx.filter = 'saturate(35%)';
+        ctx.strokeStyle = 'rgba(210,218,240,.45)'; ctx.lineWidth = 1; ctx.setLineDash([2, 2]);
         ctx.beginPath(); ctx.moveTo(q[0] + dx * 7, q[1] + dy * 7); ctx.lineTo(x - dx * R * 0.72, y - dy * R * 0.72); ctx.stroke();
         ctx.setLineDash([]);
-        ctx.fillStyle = this.col.photo; ctx.beginPath(); ctx.arc(q[0] + dx * 7, q[1] + dy * 7, 1.8, 0, TAU); ctx.fill();
+        
         ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.closePath();
-        ctx.shadowColor = hexA(this.col.photo, 0.5); ctx.shadowBlur = isSel ? 16 : 6;
+        ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 6;
         ctx.fillStyle = '#000'; ctx.fill();
         ctx.shadowBlur = 0;
         ctx.clip();
         const s = Math.max(R * 2 / img.naturalWidth, R * 2 / img.naturalHeight);
         ctx.drawImage(img, x - img.naturalWidth * s / 2, y - img.naturalHeight * s / 2, img.naturalWidth * s, img.naturalHeight * s);
         ctx.restore();
-        const ring = S.mode === 'both' ? '#F3EEFF' : this.col.photo;
-        ctx.strokeStyle = hexA(ring, isSel ? 1 : 0.8); ctx.lineWidth = isSel ? 2 : 1.4;
+        // a neutral frame: photos are keepsakes, not status marks, and must never outshine the selection
+        ctx.strokeStyle = isSel ? 'rgba(235,240,255,.85)' : 'rgba(210,218,240,.55)'; ctx.lineWidth = isSel ? 1.4 : 1;
         ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.stroke();
         this.hits.push({ x, y, r: R, item: o, prio: 4 });
       }
@@ -751,9 +754,19 @@
         const x0 = L.align === 'center' ? L.x - tw / 2 : L.x, y0 = L.y - L.size * 0.85;
         const box = [x0 - pad, y0 - pad, x0 + tw + pad, y0 + L.size * 1.1 + pad];
         if (box[0] < 12 || box[2] > w - 12 || box[1] < 8 || box[3] > h - 8) continue;
-        const hit = (b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1];
-        if (!L.pill && placed.some(hit)) continue;
-        if (!L.pill && L.align !== 'center' && solid.some(hit)) continue;
+        let hit = (b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1];
+        if (!L.pill) {
+          // try the label where it was asked for, then nudged below/above; drop it if all three collide
+          let ok = false;
+          for (const dy of L.align === 'center' ? [0, 15, -15] : [0, 11, -11]) {
+            const bb = [box[0], box[1] + dy, box[2], box[3] + dy];
+            const h2 = (b) => bb[0] < b[2] && bb[2] > b[0] && bb[1] < b[3] && bb[3] > b[1];
+            if (!placed.some(h2) && !solid.some(h2)) { box[1] = bb[1]; box[3] = bb[3]; L.y += dy; ok = true; break; }
+          }
+          if (!ok) continue;
+        } else {
+          box[0] -= 10; box[1] -= 6; box[2] += 10; box[3] += 6;
+        }
         ctx.globalAlpha = L.prio < 90 && underground(L.x, L.y) ? 0.42 : 1;
         placed.push(box);
         ctx.textAlign = L.align;
@@ -898,9 +911,9 @@
           const t = (now - t0) / 1000;
           if (t > 2.4) return false;
           const q = pos();
-          if (!small && t < 0.9) {
+          if (!small && t < 1.4) {
             // a brief dimming of the whole sky puts the moment in focus
-            ctx.fillStyle = `rgba(3,5,12,${0.32 * Math.sin(Math.PI * t / 0.9)})`;
+            ctx.fillStyle = `rgba(3,5,12,${0.36 * Math.sin(Math.PI * t / 1.4)})`;
             ctx.fillRect(0, 0, this.w, this.h);
           }
           if (small && t < 1.6) {

@@ -322,7 +322,7 @@ button.stamp.s-known:hover { color: var(--known); border-color: var(--known); }
 .k { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
 .k-seen { background: var(--seen); } .k-photo { background: var(--photo); } .k-known { background: var(--known); }
 .k-con { background: rgba(246,199,110,.25); border: 1px solid rgba(246,199,110,.6); }
-.k-part { border: 1px dashed rgba(246,199,110,.5); }
+.k-part { border: 1px solid rgba(246,199,110,.35); background: rgba(246,199,110,.06); }
 .progress-card { margin-top: 16px; padding: 14px; border-radius: 14px; background: var(--panel-2); border: 1px solid var(--line); }
 .progress-top { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: var(--ink-2); }
 .progress-top b { font-size: 22px; font-weight: 500; color: var(--seen); }
@@ -337,7 +337,7 @@ button.stamp.s-known:hover { color: var(--known); border-color: var(--known); }
 .ccell { color: var(--muted); }
 .ccell:hover { transform: scale(1.08); color: var(--ink); border-color: var(--line-2); }
 .ccell.got { color: var(--ink); border-color: rgba(246,199,110,.45); background: rgba(246,199,110,.12); }
-.ccell.part { color: var(--ink-2); border: 1px dashed rgba(246,199,110,.45); background: rgba(246,199,110,.04); }
+.ccell.part { color: var(--ink-2); border: 1px solid rgba(246,199,110,.28); background: rgba(246,199,110,.05); }
 
 .plist { display: grid; gap: 6px; }
 .prow {
@@ -648,4 +648,11 @@ button.stamp.s-known:hover { color: var(--known); border-color: var(--known); }
   .sheet-stat { margin: -6px 0 2px; font-size: 11px; }
   .sheet-legend { padding-bottom: 6px; font-size: 11px; }
   .panel { --sheet-h: 30dvh; }
+}
+
+.fov .fov-pos { display: none; }
+.fov:hover .fov-pos { display: inline; }
+.mcell.got.c-known { background: color-mix(in srgb, var(--known) 26%, var(--panel-2)); }
+@media (max-width: 560px) {
+  .panel.open { --sheet-h: 40dvh; }
 }
