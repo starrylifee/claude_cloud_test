@@ -288,6 +288,7 @@
         if (q[2] > 0.05) {
           ctx.save(); ctx.strokeStyle = hexA(this.col.seen, 0.85); ctx.lineWidth = 1.4; ctx.setLineDash([3, 3]);
           ctx.beginPath(); ctx.arc(q[0], q[1], 16, 0, TAU); ctx.stroke(); ctx.restore();
+          this.hits.push({ x: q[0], y: q[1], r: 20, item: hint, prio: 1 });
           this.label(ctx, `오늘 밤 추천 · ${hint.id} ${hint.name}`, q[0] + 22, q[1] + 4, this.col.seen, 12.5, 'left', true, false, 96);
         }
       }
@@ -558,7 +559,7 @@
         // pick the diagonal with the fewest objects and labels under the bubble
         let best = null;
         for (const [dx, dy] of DIRS) {
-          const x = q[0] + dx * (R * 1.2 + 26), y = q[1] + dy * (R * 1.2 + 26);
+          const x = q[0] + dx * (R + 18), y = q[1] + dy * (R + 18);
           if (x < R + M || x > this.w - R - M || y < R + M || y > this.h - R - M) continue;
           let cost = 0;
           for (const h of this.hits) if (Math.hypot(h.x - x, h.y - y) < R + 10) cost += h.prio + 1;
@@ -571,7 +572,7 @@
         const { x, y, dx, dy } = best;
         this.photoBoxes.push({ x, y, r: R });
         ctx.save();
-        ctx.globalAlpha = isSel ? (below ? 0.45 : 1) : below ? 0.3 : 0.8;
+        ctx.globalAlpha = isSel ? (below ? 0.6 : 1) : below ? 0.5 : 0.9;
         if (below && 'filter' in ctx) ctx.filter = 'saturate(35%)';
         ctx.strokeStyle = 'rgba(210,218,240,.45)'; ctx.lineWidth = 1; ctx.setLineDash([2, 2]);
         ctx.beginPath(); ctx.moveTo(q[0] + dx * 7, q[1] + dy * 7); ctx.lineTo(x - dx * R * 0.72, y - dy * R * 0.72); ctx.stroke();
@@ -586,7 +587,7 @@
         ctx.drawImage(img, x - img.naturalWidth * s / 2, y - img.naturalHeight * s / 2, img.naturalWidth * s, img.naturalHeight * s);
         ctx.restore();
         // a neutral frame: photos are keepsakes, not status marks, and must never outshine the selection
-        ctx.strokeStyle = isSel ? 'rgba(235,240,255,.85)' : 'rgba(210,218,240,.55)'; ctx.lineWidth = isSel ? 1.4 : 1;
+        ctx.strokeStyle = isSel ? 'rgba(240,244,255,.95)' : 'rgba(225,230,248,.8)'; ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.stroke();
         this.hits.push({ x, y, r: R, item: o, prio: 4 });
       }
@@ -726,7 +727,7 @@
       // every drawn symbol is solid for point labels; constellation names (centred, haloed) only avoid other labels
       const solid = [];
       for (const h of this.hits) if (h.prio >= 1 && h.prio !== 4) { const r = Math.min(h.r, 7) * 0.9; solid.push([h.x - r, h.y - r, h.x + r, h.y + r]); }
-      for (const m of this.marked) solid.push([m.x - m.r * 0.8, m.y - m.r * 0.8, m.x + m.r * 0.8, m.y + m.r * 0.8]);
+      for (const m of this.marked) solid.push([m.x - m.r * 0.5, m.y - m.r * 0.5, m.x + m.r * 0.5, m.y + m.r * 0.5]);
       const G = this.ground;
       const underground = (x, y) => G && ((Math.hypot(x - G.ux, y - G.uy) < G.R) !== G.zenithInside);
 
@@ -742,11 +743,12 @@
           for (const L of this.labels) if (L.prio === 100) {
             if (one || busy) { L.prio = -1; continue; }
             one = true;
-            Object.assign(L, { x: q[0], y: q[1] - 33, align: 'center', pill: true, size: 12.5, color: '#FFF1D2' });
+            const smk = this.S.marks.get(sel.key);
+            Object.assign(L, { x: q[0], y: q[1] - 33, align: 'center', pill: true, size: 12.5, color: '#FFF1D2', ring: smk ? this.markColor(smk) : null });
           }
         }
       }
-      const pad = 2, w = this.w, h = this.h;
+      const pad = 3, w = this.w, h = this.h;
       this.labels.sort((a, b) => b.prio - a.prio);
       for (const L of this.labels) {
         ctx.font = `500 ${L.size}px ${L.mono ? '"IBM Plex Mono", ui-monospace, monospace' : '"IBM Plex Sans KR", "Apple SD Gothic Neo", sans-serif'}`;
@@ -772,7 +774,7 @@
         ctx.textAlign = L.align;
         if (L.prio < 0) continue;
         if (L.pill) {
-          ctx.fillStyle = 'rgba(12,18,34,.9)'; ctx.strokeStyle = 'rgba(255,236,190,.55)'; ctx.lineWidth = 1;
+          ctx.fillStyle = 'rgba(12,18,34,.92)'; ctx.strokeStyle = L.ring ? hexA(L.ring, 0.9) : 'rgba(200,208,232,.45)'; ctx.lineWidth = L.ring ? 1.5 : 1;
           ctx.beginPath(); ctx.roundRect(box[0] - 7, box[1] - 3, box[2] - box[0] + 14, box[3] - box[1] + 6, 9); ctx.fill(); ctx.stroke();
           ctx.fillStyle = L.color; ctx.fillText(L.text, L.x, L.y);
           continue;
