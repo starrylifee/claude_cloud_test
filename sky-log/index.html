@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>하늘 수첩</title>
+<meta name="description" content="내가 본 것, 찍은 것, 알아본 천체를 성도 위에 쌓아 가는 관측 일지">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="app" id="app">
+  <header class="bar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13.5" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".45"/><path d="M16 5.5l2.2 8.3 8.3 2.2-8.3 2.2-2.2 8.3-2.2-8.3-8.3-2.2 8.3-2.2z" fill="currentColor"/></svg>
+      <div>
+        <h1>하늘 수첩</h1>
+        <p class="brand-sub" id="brandSub">내가 모은 밤하늘</p>
+      </div>
+    </div>
+
+    <div class="who" role="group" aria-label="누구의 하늘">
+      <button class="who-btn" data-who="a" aria-pressed="true"><span class="dot"></span><span class="who-name">나</span></button>
+      <button class="who-btn" data-who="b" aria-pressed="false"><span class="dot"></span><span class="who-name">짝꿍</span></button>
+      <button class="who-btn" data-who="both" aria-pressed="false"><span class="dot dot-both"></span>둘 다</button>
+    </div>
+
+    <div class="search">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M13 13l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <input id="searchInput" type="search" placeholder="M31, NGC 7000, 오리온, 목성, 베가…" autocomplete="off" spellcheck="false" aria-label="천체 찾기">
+      <ul class="search-results" id="searchResults" role="listbox" hidden></ul>
+    </div>
+
+    <div class="when" role="group" aria-label="성도 시각">
+      <button class="icon-btn step" id="hourBack" type="button" aria-label="한 시간 전"><svg viewBox="0 0 20 20"><path d="M12 5l-5 5 5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="time-chip" id="timeChip" type="button" aria-label="성도 시각 바꾸기"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 6v4.2l2.8 1.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span class="num"></span></button>
+      <button class="icon-btn step" id="hourFwd" type="button" aria-label="한 시간 뒤"><svg viewBox="0 0 20 20"><path d="M8 5l5 5-5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <input id="chartTime" class="sr-input" type="datetime-local" step="60" tabindex="-1" aria-hidden="true">
+      <button class="chip" id="nowBtn" type="button">지금</button>
+    </div>
+
+    <button class="icon-btn" id="menuBtn" type="button" aria-label="설정과 백업" aria-haspopup="dialog">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="16" cy="10" r="1.6"/></svg>
+    </button>
+  </header>
+
+  <main class="stage">
+    <section class="sky" id="sky" aria-label="성도">
+      <canvas id="skyCanvas"></canvas>
+      <canvas id="fxCanvas" aria-hidden="true"></canvas>
+      <div class="hover-tag" id="hoverTag" hidden></div>
+
+      <div class="sky-hud sky-hud-top">
+        <div class="fov" id="fovLabel">시야 90°</div>
+        <div class="pick-banner" id="pickBanner" hidden>
+          성도에서 위치를 눌러 주세요 <button class="chip chip-ghost" id="pickCancel" type="button">취소</button>
+        </div>
+      </div>
+
+      <div class="sky-hud sky-hud-left">
+        <button class="icon-btn" id="zoomIn" type="button" aria-label="확대"><svg viewBox="0 0 20 20"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+        <button class="icon-btn" id="zoomOut" type="button" aria-label="축소"><svg viewBox="0 0 20 20"><path d="M4 10h12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+        <button class="icon-btn" id="zenithBtn" type="button" aria-label="지금 이 시각, 머리 위 하늘로" title="지금 머리 위 하늘"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="1.8" fill="currentColor"/><path d="M10 1.5v3M10 15.5v3M1.5 10h3M15.5 10h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+        <button class="icon-btn" id="layersBtn" type="button" aria-label="보이는 것 고르기" aria-expanded="false"><svg viewBox="0 0 20 20"><path d="M10 3l7.5 4L10 11 2.5 7z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M2.5 10.5L10 14.5l7.5-4M2.5 13.8L10 17.8l7.5-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+      </div>
+
+      <div class="layers" id="layersPanel" hidden>
+        <p class="layers-title">성도에 보이기</p>
+        <label><input type="checkbox" data-layer="mw" checked> 은하수</label>
+        <label><input type="checkbox" data-layer="lines" checked> 별자리 선</label>
+        <label><input type="checkbox" data-layer="bounds" checked> 별자리 경계</label>
+        <label><input type="checkbox" data-layer="conNames" checked> 별자리 이름</label>
+        <label><input type="checkbox" data-layer="grid"> 적경·적위 격자</label>
+        <label><input type="checkbox" data-layer="ecliptic" checked> 황도</label>
+        <label><input type="checkbox" data-layer="horizon" checked> 지평선</label>
+        <label><input type="checkbox" data-layer="messier" checked> 메시에</label>
+        <label><input type="checkbox" data-layer="ngc" checked> NGC · IC</label>
+        <label><input type="checkbox" data-layer="solar" checked> 행성 · 달 · 혜성</label>
+        <label><input type="checkbox" data-layer="photos" checked> 내 사진</label>
+        <label class="layers-sep"><input type="checkbox" data-layer="mineOnly"> 내가 모은 것만</label>
+        <div class="layers-legend">
+          <span><i class="lg lg-seen"></i>봤어요</span><span><i class="lg lg-photo"></i>찍었어요</span><span><i class="lg lg-known"></i>알아봤어요</span>
+        </div>
+      </div>
+
+      <div class="legend legend-who" aria-label="누구의 기록" hidden>
+        <span><i class="lg lg-a"></i><b class="lg-name-a">나</b></span>
+        <span><i class="lg lg-b"></i><b class="lg-name-b">짝꿍</b></span>
+        <span><i class="lg lg-both"></i>둘 다</span>
+        <span class="lg-sep"></span>
+        <span class="lg-muted">점·일지 아이콘 = <b class="t-seen">봤어요</b> <b class="t-photo">찍었어요</b> <b class="t-known">알아봤어요</b></span>
+      </div>
+      <div class="legend legend-status" aria-label="표시 뜻">
+        <span><i class="lg lg-seen"></i>봤어요</span>
+        <span><i class="lg lg-photo"></i>찍었어요</span>
+        <span><i class="lg lg-known"></i>알아봤어요</span>
+        <span class="lg-muted"><i class="lg lg-none"></i>아직</span>
+        <span class="lg-muted"><i class="lg lg-line"></i>알아본 별자리</span>
+      </div>
+    </section>
+
+    <aside class="panel" id="panel">
+      <div class="sheet-grip" id="sheetGrip" aria-hidden="true"></div>
+      <div class="sheet-stat brand-sub" id="sheetStat"></div>
+      <div class="sheet-legend" aria-hidden="true"><span><i class="lg lg-seen"></i>봤어요</span><span><i class="lg lg-photo"></i>찍었어요</span><span><i class="lg lg-known"></i>알아봤어요</span></div>
+      <nav class="tabs" role="tablist">
+        <button role="tab" class="tab" data-tab="target" aria-selected="true">천체</button>
+        <button role="tab" class="tab" data-tab="collect" aria-selected="false">수집</button>
+        <button role="tab" class="tab" data-tab="log" aria-selected="false">일지</button>
+        <button role="tab" class="tab" data-tab="gallery" aria-selected="false">사진</button>
+      </nav>
+      <div class="tab-body" id="tab-target" role="tabpanel"></div>
+      <div class="tab-body" id="tab-collect" role="tabpanel" hidden></div>
+      <div class="tab-body" id="tab-log" role="tabpanel" hidden></div>
+      <div class="tab-body" id="tab-gallery" role="tabpanel" hidden></div>
+    </aside>
+  </main>
+</div>
+
+<!-- record dialog -->
+<dialog class="dlg" id="recordDlg" aria-labelledby="recordTitle">
+  <form method="dialog" id="recordForm" class="dlg-form">
+    <header class="dlg-head">
+      <div>
+        <p class="eyebrow" id="recordEyebrow">관측 기록</p>
+        <h2 id="recordTitle">M31</h2>
+      </div>
+      <button class="icon-btn" value="cancel" type="button" data-close aria-label="닫기"><svg viewBox="0 0 20 20"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+    </header>
+
+    <div class="who-pick" id="whoPick" hidden></div>
+    <fieldset class="status-set">
+      <legend>어떻게 만났나요? <span class="hint">여러 개 골라도 돼요</span></legend>
+      <label class="status-opt status-seen"><input type="checkbox" name="seen"><span class="status-ico"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg></span><span><b>봤어요</b><small>맨눈·쌍안경·망원경</small></span></label>
+      <label class="status-opt status-photo"><input type="checkbox" name="photo"><span class="status-ico"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="12.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8.5 7l1.6-2.5h3.8L15.5 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13.2" r="3.3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></span><span><b>찍었어요</b><small>사진으로 남김</small></span></label>
+      <label class="status-opt status-known"><input type="checkbox" name="identified"><span class="status-ico"><svg viewBox="0 0 24 24"><path d="M12 2.8l2.3 6.4 6.6.3-5.2 4.1 1.8 6.5L12 16.3l-5.5 3.8 1.8-6.5-5.2-4.1 6.6-.3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span><span><b>알아봤어요</b><small>찾아서 알아냄</small></span></label>
+    </fieldset>
+
+    <div class="photo-drop" id="photoDrop" hidden>
+      <input type="file" id="photoInput" accept="image/*" multiple hidden>
+      <div class="photo-thumbs" id="photoThumbs"></div>
+      <button type="button" class="drop-btn" id="photoPick">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V5m0 0l-4 4m4-4l4 4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 15v3.5A1.5 1.5 0 005.5 20h13a1.5 1.5 0 001.5-1.5V15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span>사진 올리기 <small>끌어다 놓아도 돼요</small></span>
+      </button>
+    </div>
+
+    <div class="grid2">
+      <label class="field"><span>언제</span><input type="datetime-local" name="when" step="60" required></label>
+      <label class="field"><span>어디서</span><input type="text" name="place" placeholder="예: 화천 조경철천문대" autocomplete="off"></label>
+    </div>
+    <label class="field"><span>장비</span><input type="text" name="gear" placeholder="예: 맨눈, 10×50 쌍안경, 80mm 굴절 + ZWO" autocomplete="off" list="gearList"></label>
+    <datalist id="gearList"></datalist>
+    <div class="grid2 coords" id="coordFields" hidden>
+      <label class="field"><span>적경 (RA)</span><input type="text" name="ra" placeholder="5h 35m 또는 83.8"></label>
+      <label class="field"><span>적위 (Dec)</span><input type="text" name="dec" placeholder="−5 23 또는 −5.39"></label>
+      <button type="button" class="chip" id="pickOnChart">성도에서 위치 찍기</button>
+    </div>
+    <label class="field"><span>메모</span><textarea name="note" rows="3" placeholder="하늘 상태, 보인 모습, 같이 본 사람…"></textarea></label>
+
+    <footer class="dlg-foot">
+      <button type="button" class="btn btn-danger" id="recordDelete" hidden>기록 지우기</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn btn-ghost" data-close>취소</button>
+      <button type="submit" class="btn btn-primary" id="recordSave" value="save">하늘에 새기기</button>
+    </footer>
+  </form>
+</dialog>
+
+<!-- comet dialog -->
+<dialog class="dlg" id="cometDlg" aria-labelledby="cometTitle">
+  <form method="dialog" id="cometForm" class="dlg-form">
+    <header class="dlg-head">
+      <div><p class="eyebrow">혜성 추가</p><h2 id="cometTitle">새 혜성</h2></div>
+      <button class="icon-btn" type="button" data-close aria-label="닫기"><svg viewBox="0 0 20 20"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+    </header>
+    <label class="field"><span>이름</span><input type="text" name="name" required placeholder="예: C/2023 A3 (Tsuchinshan–ATLAS)"></label>
+    <p class="help">궤도 요소를 넣으면 날짜마다 위치를 계산해 성도에 그려요. 비워 두면 기록할 때 위치를 직접 찍으면 돼요. 값은 MPC나 JPL에서 J2000 황도 기준으로 가져오세요.</p>
+    <div class="grid3">
+      <label class="field"><span>근일점 거리 q (AU)</span><input type="number" step="any" name="q"></label>
+      <label class="field"><span>이심률 e</span><input type="number" step="any" name="e"></label>
+      <label class="field"><span>궤도 경사 i (°)</span><input type="number" step="any" name="i"></label>
+      <label class="field"><span>근일점 인수 ω (°)</span><input type="number" step="any" name="peri"></label>
+      <label class="field"><span>승교점 경도 Ω (°)</span><input type="number" step="any" name="node"></label>
+      <label class="field"><span>근일점 통과 (UTC)</span><input type="datetime-local" step="1" name="tp"></label>
+    </div>
+    <footer class="dlg-foot">
+      <button type="button" class="btn btn-danger" id="cometDelete" hidden>혜성 지우기</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn btn-ghost" data-close>취소</button>
+      <button type="submit" class="btn btn-primary">저장</button>
+    </footer>
+  </form>
+</dialog>
+
+<!-- settings dialog -->
+<dialog class="dlg" id="settingsDlg" aria-labelledby="settingsTitle">
+  <form method="dialog" id="settingsForm" class="dlg-form">
+    <header class="dlg-head">
+      <div><p class="eyebrow">설정</p><h2 id="settingsTitle">하늘 수첩</h2></div>
+      <button class="icon-btn" type="button" data-close aria-label="닫기"><svg viewBox="0 0 20 20"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+    </header>
+    <div class="grid2">
+      <label class="field"><span>관측자 1</span><input type="text" name="nameA" maxlength="12"></label>
+      <label class="field"><span>관측자 2</span><input type="text" name="nameB" maxlength="12"></label>
+    </div>
+    <div class="grid2">
+      <label class="field"><span>관측지 위도</span><input type="number" step="any" name="lat"></label>
+      <label class="field"><span>관측지 경도</span><input type="number" step="any" name="lon"></label>
+    </div>
+    <button type="button" class="chip" id="useGeo">현재 위치 쓰기</button>
+    <div class="backend-box">
+      <p class="backend-title">저장소 <span class="badge" id="backendBadge">이 기기</span></p>
+      <p class="help">지금은 이 브라우저에만 저장돼요. 두 사람이 함께 쓰는 클라우드 저장은 틀만 만들어 두었고, 아직 연결하지 않았어요. 그전까지는 백업 파일로 옮겨 주세요.</p>
+      <div class="row">
+        <button type="button" class="btn btn-ghost" id="exportBtn">백업 내려받기</button>
+        <button type="button" class="btn btn-ghost" id="importBtn">백업 불러오기</button>
+        <input type="file" id="importInput" accept="application/json,.json" hidden>
+      </div>
+    </div>
+    <footer class="dlg-foot">
+      <span class="spacer"></span>
+      <button type="submit" class="btn btn-primary">저장</button>
+    </footer>
+  </form>
+</dialog>
+
+<!-- photo viewer -->
+<dialog class="viewer" id="viewerDlg" aria-label="사진 보기">
+  <img id="viewerImg" alt="">
+  <div class="viewer-cap" id="viewerCap"></div>
+  <button class="icon-btn viewer-close" type="button" data-close aria-label="닫기"><svg viewBox="0 0 20 20"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+</dialog>
+
+<div class="toast-stack" id="toasts" aria-live="polite"></div>
+
+<script src="js/catalog.js"></script>
+<script src="js/astro.js"></script>
+<script src="js/store.js"></script>
+<script src="js/sky.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
